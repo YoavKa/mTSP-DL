@@ -1,0 +1,4 @@
+name: mtsp_dl
+channels:
+  - pytorch
+  - defaults
