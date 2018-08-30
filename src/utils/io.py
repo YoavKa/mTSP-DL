@@ -9,7 +9,8 @@ from .tensors import USE_GPU
 
 
 def prepare_write(path):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if os.path.dirname(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
 
 def torch_save(path, data):

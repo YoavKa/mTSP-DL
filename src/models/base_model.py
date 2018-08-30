@@ -39,7 +39,14 @@ class CustomModel(abc.ABC):
             set_seed(kwargs['seed'])
 
         # noinspection PyNoneFunctionAssignment
-        self.train_dataset = self.init_dataset(kwargs['train_paths'].split(), is_train=True)
+        self.train_dataset = self.init_dataset(
+            kwargs['train_paths'].split(),
+            is_train=True,
+            data_workers=kwargs['data_workers'],
+            dataset=self.get_dataset(is_train=True),
+            load_transform=self.get_load_transform(is_train=True),
+            runtime_transform=self.get_runtime_transform(is_train=True)
+        )
         # noinspection PyTypeChecker
         if len(self.train_dataset) == 0:
             self.train_dataset = None
@@ -51,8 +58,17 @@ class CustomModel(abc.ABC):
 
         self.val_datasets = OrderedDict()
         self.val_loaders = OrderedDict()
-        datasets = apply_traverse_async(int(kwargs['data_workers'] * 1.5), kwargs['val_paths'].split(),
-                                        self.init_dataset, is_train=False)
+        datasets = apply_traverse_async(
+            int(kwargs['data_workers'] * 1.5),
+            kwargs['val_paths'].split(),
+            self.init_dataset,
+
+            is_train=False,
+            data_workers=kwargs['data_workers'],
+            dataset=self.get_dataset(is_train=False),
+            load_transform=self.get_load_transform(is_train=False),
+            runtime_transform=self.get_runtime_transform(is_train=False)
+        )
         for path, dataset in sorted(datasets.items()):
             if dataset is not None and len(dataset) > 0:
                 pretty_print(f'\tVal dataset loaded: {len(dataset)} samples found in {path}')
@@ -89,9 +105,6 @@ class CustomModel(abc.ABC):
 
         self.save_last = not kwargs['save_all']
         self.save_best = kwargs['save_best']
-        if self.save_dir is None:
-            assert not self.save_last, 'Cannot save only last checkpoint if no save dir is defined!'
-            assert self.save_best == '', 'Cannot save best checkpoint if no save dir is defined!'
         self.best_value = None
 
         beginning_name = time.strftime('%Y%m%d-%H%M%S', time.localtime())
@@ -167,17 +180,15 @@ class CustomModel(abc.ABC):
     def add_args(cls, parser):
         return parser
 
-    def init_dataset(self, paths, is_train):
-        data_workers = self.start_args['data_workers']
-
+    @staticmethod
+    def init_dataset(paths, is_train, data_workers, dataset, load_transform, runtime_transform):
         if is_train:
             data_workers = int(data_workers * 1.5)
         else:
             data_workers = 0
 
-        return self.get_dataset(is_train=is_train)(paths, load_transform=self.get_load_transform(is_train=is_train),
-                                                   runtime_transform=self.get_runtime_transform(is_train=is_train),
-                                                   max_workers=data_workers)
+        return dataset(paths, load_transform=load_transform, runtime_transform=runtime_transform,
+                       max_workers=data_workers)
 
     def init_loader(self, dataset, is_train):
         batch_size = self.start_args['batch_size']
