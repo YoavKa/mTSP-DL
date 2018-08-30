@@ -69,8 +69,8 @@ class CustomModel(abc.ABC):
         self.val_loaders = OrderedDict()
         datasets = apply_traverse_async(int(kwargs['data_workers'] * 1.5), kwargs['val_paths'].split(),
                                         self.init_dataset, is_train=False)
-        for path, dataset in datasets.items():
-            if dataset is not None:
+        for path, dataset in sorted(datasets.items()):
+            if dataset is not None and len(dataset) > 0:
                 pretty_print(f'\tVal dataset loaded: {len(dataset)} samples found in {path}')
                 self.val_datasets[path] = dataset
                 self.val_loaders[path] = self.init_loader(dataset, is_train=False)

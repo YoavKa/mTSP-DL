@@ -14,15 +14,15 @@ def main(args=None):
         args = sys.argv[1:]
 
     if len(args) == 0:
-        script_name, args = '', []
+        script_name, args = '__init__', []
     else:
-        script_name, args = '.' + args[0], args[1:]
+        script_name, args = args[0], args[1:]
 
     print(f'Invoking script "{script_name}" with args: {args}')
 
     # try load script
     try:
-        entry_point = importlib.import_module(f'.{SCRIPTS_PACKAGE}{script_name}', package=DIR_NAME)
+        entry_point = importlib.import_module(f'.{SCRIPTS_PACKAGE}.{script_name}', package=DIR_NAME)
     except ImportError as e:
         print(f'Script "{script_name}" not found: {e.msg}')
         return 1
