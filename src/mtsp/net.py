@@ -32,7 +32,7 @@ class DistancesToWeights(nn.Module):
         dists = dists * self.temperature.unsqueeze(0).unsqueeze(1).unsqueeze(2)
 
         # calculate weights
-        weights = (-dists).exp()  # Float(b x n x n x main_dim)
+        weights = 1 / dists.exp()  # Float(b x n x n x main_dim)
 
         # remove self pool
         if not self.self_pool:
