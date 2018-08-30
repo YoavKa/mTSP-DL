@@ -10,14 +10,16 @@ from glob import glob
 
 import torch
 from torch.nn.utils.clip_grad import clip_grad_norm
+import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader
 
 from tqdm import tqdm
 from tensorboardX import SummaryWriter
 
-from ..loaders import RepeatIterator
+from ..loaders import RepeatIterator, IdentityTransform
 from ..logging import pretty_print, time_str, log_tensorboard
-from ..utils import USE_GPU, set_seed, is_number, torch_load, torch_save
+from ..utils import USE_GPU, set_seed, is_number, torch_load, torch_save, apply_traverse_async
 
 
 class CustomModel(abc.ABC):
@@ -53,23 +55,22 @@ class CustomModel(abc.ABC):
         pretty_print('\tNet setup completed')
 
         # noinspection PyNoneFunctionAssignment
-        self.train_dataset = self.get_dataset(kwargs['train_paths'], is_train=True)
+        self.train_dataset = self.init_dataset(kwargs['train_paths'].split(), is_train=True)
         if self.train_dataset is not None:
             pretty_print(f'\tTrain dataset loaded: {len(self.train_dataset)} samples found')
-            self.train_loader = RepeatIterator(self.get_loader(self.train_dataset, is_train=True))
+            self.train_loader = RepeatIterator(self.init_loader(self.train_dataset, is_train=True))
         else:
             self.train_loader = None
 
         self.val_datasets = OrderedDict()
         self.val_loaders = OrderedDict()
-        for path in kwargs['val_paths'].split():
-            # noinspection PyNoneFunctionAssignment
-            dataset = self.get_dataset(path, is_train=False)
+        datasets = apply_traverse_async(int(kwargs['data_workers'] * 1.5), kwargs['val_paths'].split(),
+                                        self.init_dataset, is_train=False)
+        for path, dataset in datasets.items():
             if dataset is not None:
                 pretty_print(f'\tVal dataset loaded: {len(dataset)} samples found in {path}')
                 self.val_datasets[path] = dataset
-                # noinspection PyNoneFunctionAssignment
-                self.val_loaders[path] = self.get_loader(dataset, is_train=False)
+                self.val_loaders[path] = self.init_loader(dataset, is_train=False)
         if len(self.val_datasets) == 0:
             self.val_datasets = None
         if len(self.val_loaders) == 0:
@@ -110,21 +111,34 @@ class CustomModel(abc.ABC):
     @classmethod
     def default_kwargs(cls):
         return {
-            'lr_gamma': 1.0,
-            'lr_step': 1,
+            # general settings
+            'seed': -1,
+
+            # save settings
             'name': None,
-            'log_dir': None,
             'save_dir': None,
+            'load_weights': None,
+
+            # logging settings
+            'log_dir': None,
             'norm': 2.0,
             'log_weight_norm': False,
             'log_grad_norm': False,
-            'load_weights': None,
-            'grad_clip': 0.0,
             'save_last': False,
             'save_best': '',
-            'seed': -1,
-            'train_paths': None,
-            'val_paths': ''
+
+            # data settings
+            'train_paths': '',
+            'val_paths': '',
+            'batch_size': 32,
+            'no_shuffle': True,
+            'data_workers': 4,
+            'drop_last': False,
+
+            # optimizer settings
+            'lr_gamma': 1.0,
+            'lr_step': 1,
+            'grad_clip': 0.0,
         }
 
     @classmethod
@@ -135,23 +149,64 @@ class CustomModel(abc.ABC):
     def init_net(self):
         pass
 
-    # noinspection PyUnusedLocal
     @abc.abstractmethod
-    def get_dataset(self, paths, is_train):
-        return None
+    def get_dataset(self, is_train):
+        return lambda: None
 
     # noinspection PyUnusedLocal
     @abc.abstractmethod
-    def get_loader(self, dataset, is_train):
-        return None
+    def init_dataset(self, paths, is_train):
+        data_workers = self.start_args['data_workers']
+
+        if is_train:
+            data_workers = int(data_workers * 1.5)
+        else:
+            data_workers = 0
+
+        return self.get_dataset(is_train=is_train)(paths, load_transform=self.get_load_transform(is_train=is_train),
+                                                   runtime_transform=self.get_runtime_transform(is_train=is_train),
+                                                   max_workers=data_workers)
+
+    def init_loader(self, dataset, is_train):
+        batch_size = self.start_args['batch_size']
+        shuffle = not self.start_args['no_shuffle']
+        data_workers = self.start_args['data_workers']
+        drop_last = self.start_args['drop_last']
+
+        if not is_train:
+            shuffle = False
+            drop_last = False
+
+        if hasattr(dataset, 'get_batch_sampler'):
+            loader_kwargs = {
+                'batch_sampler': dataset.get_batch_sampler(batch_size=batch_size,
+                                                           shuffle=shuffle,
+                                                           drop_last=drop_last),
+            }
+        else:
+            loader_kwargs = {
+                'batch_size': batch_size,
+                'shuffle': shuffle,
+                'drop_last': drop_last,
+            }
+
+        return DataLoader(dataset, num_workers=data_workers, **loader_kwargs)
+
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def get_load_transform(self, is_train):
+        return IdentityTransform()
+
+    # noinspection PyUnusedLocal,PyMethodMayBeStatic
+    def get_runtime_transform(self, is_train):
+        return IdentityTransform()
 
     @abc.abstractmethod
     def init_criterion(self):
         pass
 
-    @abc.abstractmethod
     def init_optimizer(self):
-        pass
+        return optim.Adam([p for p in self.net.parameters() if p.requires_grad],
+                          lr=self.start_args['lr'], weight_decay=self.start_args['l2'])
 
     def epoch(self, lr=None, train_minibatches=0):
         self.epochs_done += 1
