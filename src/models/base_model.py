@@ -56,6 +56,9 @@ class CustomModel(abc.ABC):
 
         # noinspection PyNoneFunctionAssignment
         self.train_dataset = self.init_dataset(kwargs['train_paths'].split(), is_train=True)
+        # noinspection PyTypeChecker
+        if len(self.train_dataset) == 0:
+            self.train_dataset = None
         if self.train_dataset is not None:
             pretty_print(f'\tTrain dataset loaded: {len(self.train_dataset)} samples found')
             self.train_loader = RepeatIterator(self.init_loader(self.train_dataset, is_train=True))
@@ -84,7 +87,7 @@ class CustomModel(abc.ABC):
         self.log_grad_norm = kwargs['log_grad_norm']
         self.grad_clip = kwargs['grad_clip']
 
-        self.save_last = kwargs['save_last']
+        self.save_last = not kwargs['save_all']
         self.save_best = kwargs['save_best']
         if self.save_dir is None:
             assert not self.save_last, 'Cannot save only last checkpoint if no save dir is defined!'
@@ -140,7 +143,7 @@ class CustomModel(abc.ABC):
             'norm': 2.0,
             'log_weight_norm': False,
             'log_grad_norm': False,
-            'save_last': False,
+            'save_all': False,
             'save_best': '',
 
             # data settings
@@ -156,7 +159,7 @@ class CustomModel(abc.ABC):
             'lr_gamma': 1.0,
             'lr_step': 1,
             'grad_clip': 0.0,
-            'lr': 1e-3,
+            'lr': 1e-4,
             'l2': 0.0,
         }
 
@@ -465,7 +468,7 @@ class CustomModel(abc.ABC):
     def run(cls, args, epochs=None):
         # create parser and original defaults
         parser = cls.get_args_parser()
-        parser.add_argument('--epochs', default=0, type=int)
+        parser.add_argument('--epochs', default=-1, type=int)
         parser.add_argument('--minibatches', default=0, type=int)
         parser.add_argument('-d', '--defaults-file', default=None, metavar='FILE')  # add to make it visible upon -h
 
@@ -485,6 +488,10 @@ class CustomModel(abc.ABC):
         del kwargs['minibatches']
         model = cls(**kwargs)
         if epochs is not None:
-            for _ in range(epochs):
-                model.epoch(train_minibatches=minibatches)
+            if epochs < 0:
+                while True:
+                    model.epoch(train_minibatches=minibatches)
+            else:
+                for _ in range(epochs):
+                    model.epoch(train_minibatches=minibatches)
         return model
