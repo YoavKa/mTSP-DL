@@ -108,6 +108,22 @@ class CustomModel(abc.ABC):
 
         pretty_print('Setup completed')
 
+    @abc.abstractmethod
+    def init_net(self):
+        pass
+
+    @abc.abstractmethod
+    def get_dataset(self, is_train):
+        return lambda: None
+
+    @abc.abstractmethod
+    def init_criterion(self):
+        pass
+
+    @abc.abstractmethod
+    def get_train_scores(self, *items):
+        return None, None
+
     @classmethod
     def default_kwargs(cls):
         return {
@@ -130,31 +146,23 @@ class CustomModel(abc.ABC):
             # data settings
             'train_paths': '',
             'val_paths': '',
-            'batch_size': 32,
+            'batch_size': 128,
             'no_shuffle': True,
-            'data_workers': 4,
+            'data_workers': 8,
             'drop_last': False,
 
             # optimizer settings
             'lr_gamma': 1.0,
             'lr_step': 1,
             'grad_clip': 0.0,
+            'lr': 1e-3,
+            'l2': 0.0,
         }
 
     @classmethod
     def add_args(cls, parser):
         return parser
 
-    @abc.abstractmethod
-    def init_net(self):
-        pass
-
-    @abc.abstractmethod
-    def get_dataset(self, is_train):
-        return lambda: None
-
-    # noinspection PyUnusedLocal
-    @abc.abstractmethod
     def init_dataset(self, paths, is_train):
         data_workers = self.start_args['data_workers']
 
@@ -199,10 +207,6 @@ class CustomModel(abc.ABC):
     # noinspection PyUnusedLocal,PyMethodMayBeStatic
     def get_runtime_transform(self, is_train):
         return IdentityTransform()
-
-    @abc.abstractmethod
-    def init_criterion(self):
-        pass
 
     def init_optimizer(self):
         return optim.Adam([p for p in self.net.parameters() if p.requires_grad],
@@ -358,11 +362,6 @@ class CustomModel(abc.ABC):
         pretty_print('Validate:', json.dumps(val_scores, sort_keys=True))
 
         return val_scores
-
-    # noinspection PyUnusedLocal
-    @abc.abstractmethod
-    def get_train_scores(self, *items):
-        return None, None
 
     def get_val_scores(self, *items):
         loss, result = self.get_train_scores(*items)
