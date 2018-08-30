@@ -1,5 +1,3 @@
-import itertools
-
 import torch
 from torch.utils.data.sampler import SubsetRandomSampler, BatchSampler
 
@@ -9,13 +7,21 @@ from ..utils import round_robin, random_merge
 class RepeatIterator:
     def __init__(self, obj):
         self.__obj = obj
-        self.__iterator = itertools.repeat(iter(obj))
+        self.__iterator = iter(obj)
 
     def get(self, k=0):
         if k <= 0:
             k = len(self.__obj)
 
-        yield from itertools.islice(self.__iterator, k)
+        for _ in range(k):
+            try:
+                yield next(self.__iterator)
+            except StopIteration:
+                self.__iterator = iter(self.__obj)
+                try:
+                    yield next(self.__iterator)
+                except StopIteration:
+                    raise RuntimeError("Couldn't restart the iterator!")
 
     def __len__(self):
         return len(self.__obj)

@@ -251,8 +251,8 @@ class CustomModel(abc.ABC):
         text_summary = {}
         for key in list(scalars_summary.keys()):
             value = scalars_summary[key]
-            if isinstance(value, str):
-                text_summary[key] = value
+            if not is_number(value):
+                text_summary[key] = str(value)
                 del scalars_summary[key]
 
         # save best model
