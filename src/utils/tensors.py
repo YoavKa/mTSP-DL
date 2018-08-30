@@ -8,6 +8,24 @@ from .common import assert_result
 
 USE_GPU = 'CUDA_VISIBLE_DEVICES' in os.environ and os.environ['CUDA_VISIBLE_DEVICES'] != '-1'
 
+CPU_TENSORS = {
+    'long': torch.LongTensor,
+    'float': torch.FloatTensor,
+    'byte': torch.ByteTensor,
+    'sparse.long': torch.sparse.LongTensor,
+    'sparse.float': torch.sparse.FloatTensor,
+    'sparse.byte': torch.sparse.ByteTensor,
+}
+GPU_TENSORS = {
+    'long': torch.cuda.LongTensor,
+    'float': torch.cuda.FloatTensor,
+    'byte': torch.cuda.ByteTensor,
+    'sparse.long': torch.cuda.sparse.LongTensor,
+    'sparse.float': torch.cuda.sparse.FloatTensor,
+    'sparse.byte': torch.cuda.sparse.ByteTensor,
+}
+TENSORS = GPU_TENSORS if USE_GPU else CPU_TENSORS
+
 
 def to_variable(*tensors, async=False, pin_memory=False, volatile=False):
     result = []
@@ -84,3 +102,31 @@ def chunk_at(tensor, dim=0, squeeze=True):
         return (t.squeeze(dim) for t in tensor.chunk(tensor.size(dim), dim=dim))
     else:
         return tensor.chunk(tensor.size(dim), dim=dim)
+
+
+# noinspection PyShadowingBuiltins
+def zeros(*sizes, type=None):
+    if type is not None:
+        return TENSORS[type](*sizes).fill_(0)
+    elif USE_GPU:
+        # noinspection PyArgumentList
+        return torch.cuda.FloatTensor(*sizes).fill_(0)
+    else:
+        return torch.zeros(*sizes)
+
+
+# noinspection PyShadowingBuiltins
+def ones(*sizes, type=None):
+    if type is not None:
+        return TENSORS[type](*sizes).fill_(1)
+    elif USE_GPU:
+        # noinspection PyArgumentList
+        return torch.cuda.FloatTensor(*sizes).fill_(1)
+    else:
+        return torch.ones(*sizes)
+
+
+def is_sorted(tensor):
+    # arr:  Tensor(length)
+    # noinspection PyUnresolvedReferences
+    return (tensor[:-1] <= tensor[1:]).all()

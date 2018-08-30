@@ -5,7 +5,7 @@ from ..loaders import BaseDataset, Transform
 
 class CitiesDistances(Transform):
     def __init__(self, cities_idx):
-        super(CitiesDistances, self).__init__((cities_idx,))
+        super().__init__((cities_idx,))
 
     def apply(self, cities):
         # cities:   Float(n x d)
@@ -21,7 +21,7 @@ class CitiesDistances(Transform):
 
 class SVDCities(Transform):
     def __init__(self, cities_idx, dists_idx, svd_dim):
-        super(SVDCities, self).__init__((cities_idx, dists_idx))
+        super().__init__((cities_idx, dists_idx))
         self.svd_dim = svd_dim
 
     def apply(self, cities, dists):
@@ -46,7 +46,7 @@ class SVDCities(Transform):
 
 class SplitConnectivityMatrix(Transform):
     def __init__(self, con_matrix_idx):
-        super(SplitConnectivityMatrix, self).__init__((con_matrix_idx,))
+        super().__init__((con_matrix_idx,))
 
     @staticmethod
     def apply(con_matrix):
@@ -59,6 +59,15 @@ class SplitConnectivityMatrix(Transform):
                 target[group, cur, :] = con_matrix[cur, :]
                 cur = con_matrix[cur, :].nonzero()[0, 0]
         return target,
+
+
+class SalesmenEncoding(Transform):
+    def __init__(self, count_idx):
+        super().__init__((count_idx,))
+
+    def apply(self, count):
+        # noinspection PyArgumentList
+        return torch.stack([torch.FloatTensor([(i + 1.0) / count, count]) for i in range(count)]),
 
 
 class MTSPDataset(BaseDataset):
