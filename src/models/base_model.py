@@ -38,22 +38,6 @@ class CustomModel(abc.ABC):
         if kwargs['seed'] > 0:
             set_seed(kwargs['seed'])
 
-        self.net = self.init_net()
-        if USE_GPU and self.net is not None:
-            self.net = self.net.cuda()
-
-        self.criterion = self.init_criterion()
-        if USE_GPU and self.criterion is not None:
-            self.criterion = self.criterion.cuda()
-
-        self.optimizer = self.init_optimizer()
-        # noinspection PyTypeChecker
-        self.scheduler = StepLR(self.optimizer, kwargs['lr_step'], kwargs['lr_gamma'])
-
-        if kwargs['load_weights'] is not None:
-            self.load(kwargs['load_weights'])
-        pretty_print('\tNet setup completed')
-
         # noinspection PyNoneFunctionAssignment
         self.train_dataset = self.init_dataset(kwargs['train_paths'].split(), is_train=True)
         # noinspection PyTypeChecker
@@ -78,6 +62,22 @@ class CustomModel(abc.ABC):
             self.val_datasets = None
         if len(self.val_loaders) == 0:
             self.val_loaders = None
+
+        self.net = self.init_net()
+        if USE_GPU and self.net is not None:
+            self.net = self.net.cuda()
+
+        self.criterion = self.init_criterion()
+        if USE_GPU and self.criterion is not None:
+            self.criterion = self.criterion.cuda()
+
+        self.optimizer = self.init_optimizer()
+        # noinspection PyTypeChecker
+        self.scheduler = StepLR(self.optimizer, kwargs['lr_step'], kwargs['lr_gamma'])
+
+        if kwargs['load_weights'] is not None:
+            self.load(kwargs['load_weights'])
+        pretty_print('\tNet setup completed')
 
         self.save_dir = kwargs['save_dir']
         self.epochs_done = 0
