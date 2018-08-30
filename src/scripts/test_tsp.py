@@ -19,6 +19,7 @@ def main(*args):
         '--load-weights', args.weights,
         '--val-paths', args.dataset,
         '--beam-sizes', *list(map(str, args.beam_sizes)),
+        '--ptrnet'
     ], epochs=0)
 
     return model.epoch()

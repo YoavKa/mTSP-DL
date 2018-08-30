@@ -32,9 +32,9 @@ class SVDCities(Transform):
             return cities, dists
 
         # normalize distances
-        dists = dists / dists.mean()
+        dists_norm = dists / dists.mean()
 
-        u, s, v = dists.svd()
+        u, s, v = dists_norm.svd()
         top_indices = s.topk(self.svd_dim)[1]  # Long(k)
         u_approx = u.t()[top_indices].t()  # Float(n x k)
         s_approx = s[top_indices]  # Float(k)
@@ -99,10 +99,6 @@ class MTSPDataset(BaseDataset):
                     # skip delimiter
                     next(f_iter)
 
-                    # normalize cities to the range (-1, 1) from (0, 1)
-                    cities = cities * 2 - 1
-                    label_length *= 2
-
                     yield (cities, m, con_matrix, label_length), {'length': label_length}, (n, m)
 
                 except StopIteration:
@@ -121,8 +117,6 @@ class PointerNetworkDataset(BaseDataset):
                 coords = list(map(float, parts[:split_idx]))
                 # noinspection PyArgumentList
                 cities = torch.FloatTensor(coords).view(-1, 2)
-                # normalize cities to the range (-1, 1) from (0, 1)
-                cities = cities * 2 - 1
 
                 # read path
                 n = cities.size(0)
