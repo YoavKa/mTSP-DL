@@ -99,3 +99,11 @@ class LayerNorm(nn.Module):
 
         normalized_x = (x - mean.expand_as(x)) / std.expand_as(x)
         return normalized_x * self.gamma + self.beta
+
+
+def normalize_dims(x, dims):
+    sums = x
+    for dim in dims:
+        sums = sums.sum(dim=dim, keepdim=True)
+    sums = sums.expand_as(x)
+    return x / sums

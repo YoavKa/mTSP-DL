@@ -71,3 +71,10 @@ def strip_main_diagonal(x):
     result = new_x.contiguous().view(*base_size, n, n - 1)
 
     return result
+
+
+def chunk_at(tensor, dim=0, squeeze=True):
+    if squeeze:
+        return (t.squeeze(dim) for t in tensor.chunk(tensor.size(dim), dim=dim))
+    else:
+        return tensor.chunk(tensor.size(dim), dim=dim)
