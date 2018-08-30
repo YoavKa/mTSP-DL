@@ -54,3 +54,24 @@ def random_merge(*iterables, index=False, index_sequence=False):
                 yield nexts[i]()
         except StopIteration:
             nexts.pop(i)
+
+
+def assert_result(result, *test_args, **test_kwargs):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        actual_res = func(*test_args, **test_kwargs)
+        cmp = actual_res == result
+        if hasattr(cmp, 'all'):
+            cmp = cmp.all()
+        if not cmp:
+            message = 'Result assertion failed!\n'
+            message += 'Arguments: ' + str(test_args) + '\n'
+            message += 'Keyword arguments: ' + str(test_kwargs) + '\n'
+            message += 'Expected result: ' + str(result) + '\n'
+            message += 'Actual result: ' + str(actual_res)
+            raise AssertionError(message)
+
+        return wrapper
+    return decorator

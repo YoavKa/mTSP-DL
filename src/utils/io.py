@@ -5,7 +5,7 @@ import os
 
 import torch
 
-from .gpu import USE_GPU
+from .tensors import USE_GPU
 
 
 def prepare_write(path):
