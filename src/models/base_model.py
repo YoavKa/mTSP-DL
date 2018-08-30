@@ -147,9 +147,10 @@ class CustomModel(abc.ABC):
             'train_paths': '',
             'val_paths': '',
             'batch_size': 128,
-            'no_shuffle': True,
+            'no_shuffle': False,
             'data_workers': 8,
             'drop_last': False,
+            'round_robin': False,
 
             # optimizer settings
             'lr_gamma': 1.0,
@@ -180,16 +181,19 @@ class CustomModel(abc.ABC):
         shuffle = not self.start_args['no_shuffle']
         data_workers = self.start_args['data_workers']
         drop_last = self.start_args['drop_last']
+        round_robin = self.start_args['round_robin']
 
         if not is_train:
             shuffle = False
             drop_last = False
+            round_robin = True
 
         if hasattr(dataset, 'get_batch_sampler'):
             loader_kwargs = {
                 'batch_sampler': dataset.get_batch_sampler(batch_size=batch_size,
                                                            shuffle=shuffle,
-                                                           drop_last=drop_last),
+                                                           drop_last=drop_last,
+                                                           round_robin=round_robin),
             }
         else:
             loader_kwargs = {

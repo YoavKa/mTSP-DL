@@ -54,7 +54,7 @@ def apply_traverse(files, func, *args, **kwargs):
 
 
 def apply_traverse_async(workers, files, func, *args, **kwargs):
-    if workers == 0:
+    if workers is not None and workers == 0:
         return apply_traverse(files, func, *args, **kwargs)
 
     futures = {}
