@@ -16,22 +16,22 @@ class BaseDataset(Dataset, abc.ABC):
 
         self.samples = []
         stats_sum = defaultdict(float)
-        self.type_to_idx = {}
+        type_to_idx = defaultdict(list)
 
         for cur_samples, cur_stats_sum, cur_type_to_idx in \
-                apply_traverse_async(max_workers, files, self.parse_file, load_transform).values():
+                apply_traverse_async(max_workers, files, self.handle_file, load_transform).values():
             for key, value in cur_type_to_idx.items():
                 # noinspection PyArgumentList
-                indices = torch.LongTensor(value) + len(self.samples)
-                if key not in self.type_to_idx:
-                    self.type_to_idx[key] = indices
-                else:
-                    self.type_to_idx[key] = torch.cat((self.type_to_idx[key], indices), dim=0)
+                type_to_idx[key].append(torch.LongTensor(value) + len(self.samples))
 
             self.samples.extend(cur_samples)
 
             for key, value in cur_stats_sum.items():
                 stats_sum[key] += value
+
+        self.type_to_idx = {
+            key: torch.cat(value, dim=0) for key, value in type_to_idx.items()
+        }
 
         if len(self.samples) > 0:
             self.stats = {
@@ -41,9 +41,25 @@ class BaseDataset(Dataset, abc.ABC):
             self.stats = {}
 
     @abc.abstractmethod
-    def parse_file(self, file_path, load_transform):
-        # returns [samples, lengths_sum, size_to_idx]
+    def parse_file(self, file_path):
+        # yields [sample, stats, type]
         raise NotImplementedError()
+
+    def handle_file(self, file_path, load_transform):
+        samples = []
+        stats_sum = defaultdict(float)
+        type_to_idx = defaultdict(list)
+        for sample, stats, type_ in self.parse_file(file_path):
+            sample = load_transform(*sample)
+            sample = tuple(map(TorchPickleWrapper.wrap, sample))
+            samples.append(sample)
+
+            for key, value in stats.items():
+                stats_sum[key] += value
+
+            type_to_idx[type_].append(len(samples) - 1)
+
+        return samples, stats_sum, type_to_idx
 
     def __getitem__(self, index):
         sample = self.samples[index]
