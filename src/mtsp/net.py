@@ -104,10 +104,13 @@ class MTSPSoftassign(nn.Module):
 
 class MTSPNet(nn.Module):
     def __init__(self, layers, cities_in_dim, groups_in_dim, main_dim, avg_pool, residual, norm, ff_hidden_dim, dropout,
-                 self_pool, embedding_norm, softassign_layers, memory_efficient=False):
+                 self_pool, embedding_norm, softassign_layers, weighting, memory_efficient=False):
         super().__init__()
 
-        self.distance_to_weights = DistancesToWeights(self_pool, main_dim)
+        if weighting:
+            self.distance_to_weights = DistancesToWeights(self_pool, main_dim)
+        else:
+            self.distance_to_weights = lambda dists: None
         self.perm_inv_net = PermutationInvariantNet(layers, [cities_in_dim, cities_in_dim, groups_in_dim],
                                                     [main_dim] * 3, [ff_hidden_dim] * 3, avg_pool, residual, norm,
                                                     dropout, True, self_pool, embedding_norm)
@@ -133,6 +136,7 @@ class MTSPNet(nn.Module):
         others = cities[:, 1:, :]  # Float(batch x (cities_length - 1) x cities_in_dim)
 
         # None | Float(batch x cities_length x cities_length x main_dim)
+        # noinspection PyNoneFunctionAssignment
         weights = self.distance_to_weights(dists)
         if weights is None:
             sets_weights = None

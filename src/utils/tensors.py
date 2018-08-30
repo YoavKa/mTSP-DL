@@ -26,6 +26,12 @@ def to_variable(*tensors, async=False, pin_memory=False, volatile=False):
         return result
 
 
+def get_data(tensor):
+    if isinstance(tensor, Variable):
+        return tensor.data
+    return tensor
+
+
 # noinspection PyUnresolvedReferences
 @assert_result(torch.Tensor([[[1, 2], [3, 5], [6, 7]],
                              [[10, 11], [12, 14], [15, 16]]]),
