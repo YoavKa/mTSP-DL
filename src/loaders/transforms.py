@@ -32,7 +32,7 @@ class IdentityTransform(Transform):
 
 class ComposeTransforms(Transform):
     def __init__(self, *transforms):
-        super(ComposeTransforms, self).__init__()
+        super().__init__()
         self.transforms = transforms
 
     def apply(self, *parts):
@@ -43,7 +43,7 @@ class ComposeTransforms(Transform):
 
 class FilterParts(Transform):
     def __init__(self, *valid_indices):
-        super(FilterParts, self).__init__()
+        super().__init__()
         self.valid_indices = valid_indices
 
     def __call__(self, *parts):
@@ -52,3 +52,12 @@ class FilterParts(Transform):
     def apply(self, *parts):
         parts = [parts[idx] for idx in self.valid_indices]
         return parts
+
+
+class LambdaTransform(Transform):
+    def __init__(self, func, indices=None):
+        super().__init__(indices)
+        self.func = func
+
+    def apply(self, *parts):
+        return self.func(*parts)

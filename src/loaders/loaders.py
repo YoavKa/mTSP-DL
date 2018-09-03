@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data.sampler import SubsetRandomSampler, BatchSampler
+from torch.utils.data.sampler import SubsetRandomSampler, BatchSampler, Sampler
 
 from ..utils import round_robin, random_merge
 
@@ -46,8 +46,9 @@ class TorchPickleWrapper(object):
 
 class AlternatingBatchSampler(object):
     # noinspection PyShadowingNames
-    def __init__(self, indices, batch_size, shuffle, drop_last, round_robin=False):
+    def __init__(self, indices, batch_size, shuffle, drop_last, round_robin=False, dataset_index=False):
         self.round_robin = round_robin
+        self.dataset_index = dataset_index
 
         self.batch_samplers = []
         for idx in indices:
@@ -59,9 +60,21 @@ class AlternatingBatchSampler(object):
 
     def __iter__(self):
         if not self.round_robin:
-            return random_merge(*self.batch_samplers)
+            return random_merge(*self.batch_samplers, index_sequence=self.dataset_index)
         else:
-            return round_robin(*self.batch_samplers)
+            return round_robin(*self.batch_samplers, index_sequence=self.dataset_index)
 
     def __len__(self):
         return sum(len(batch_sampler) for batch_sampler in self.batch_samplers)
+
+
+class RangeSampler(Sampler):
+    def __init__(self, count):
+        super().__init__(None)
+        self.count = count
+
+    def __iter__(self):
+        yield from range(self.count)
+
+    def __len__(self):
+        return self.count

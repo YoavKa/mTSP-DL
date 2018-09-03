@@ -1,6 +1,8 @@
+import datetime
 import itertools
 import numbers
 import random
+import re
 
 import numpy as np
 
@@ -75,3 +77,22 @@ def assert_result(result, *test_args, **test_kwargs):
 
         return wrapper
     return decorator
+
+
+# taken from https://stackoverflow.com/a/4628148
+TIME_REGEX = re.compile(r'((?P<hours>\d+?)hr)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?')
+
+
+# taken from https://stackoverflow.com/a/4628148
+def parse_time(time_str):
+    # USAGE: parser.add_argument('delta', type=parse_time, default=parse_time('0s'), nargs='?')
+    #        delta.total_seconds()
+    parts = TIME_REGEX.match(time_str)
+    if not parts:
+        return
+    parts = parts.groupdict()
+    time_params = {}
+    for (name, param) in parts.items():
+        if param:
+            time_params[name] = int(param)
+    return datetime.timedelta(**time_params)

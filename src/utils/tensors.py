@@ -1,5 +1,7 @@
 import os
 
+import numpy as np
+
 import torch
 from torch.autograd import Variable
 
@@ -130,3 +132,11 @@ def is_sorted(tensor):
     # arr:  Tensor(length)
     # noinspection PyUnresolvedReferences
     return (tensor[:-1] <= tensor[1:]).all()
+
+
+# taken from https://stackoverflow.com/a/8557173
+def minimal_numpy_dtype(n):
+    for dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
+        if n <= dtype(-1):
+            return dtype
+    raise RuntimeError('{} is really big!'.format(n))
