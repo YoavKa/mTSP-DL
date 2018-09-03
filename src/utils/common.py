@@ -22,6 +22,22 @@ def is_number(obj):
     return isinstance(obj, numbers.Number)
 
 
+def is_ok(func, args, err):
+    try:
+        func(*args)
+        return True
+    except err:
+        return False
+
+
+def is_int(str_):
+    return is_ok(int, [str_], ValueError)
+
+
+def is_float(str_):
+    return is_ok(float, [str_], ValueError)
+
+
 # taken from https://docs.python.org/3/library/itertools.html#itertools-recipes
 def round_robin(*iterables, index=False, index_sequence=False):
     # Recipe credited to George Sakkis

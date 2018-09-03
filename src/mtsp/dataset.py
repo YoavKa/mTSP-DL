@@ -1,6 +1,9 @@
+import os
+
 import torch
 
 from ..loaders import BaseDataset, Transform
+from ..utils import is_int
 
 
 class CitiesDistances(Transform):
@@ -131,3 +134,27 @@ class PointerNetworkDataset(BaseDataset):
                 label_length = (con_matrix.float() * dists).sum()
 
                 yield (cities, 1, con_matrix, label_length), {'length': label_length}, n
+
+
+class MTSPLibDataset(BaseDataset):
+    def parse_file(self, file_path):
+        cities = None
+        with open(file_path) as input_file:
+            for line in iter(input_file):
+                parts = line.split()
+                if len(parts) == 0:
+                    continue
+
+                if parts[0].startswith('DIMENSION'):
+                    cities = torch.zeros(int(parts[-1]), 2)
+
+                elif is_int(parts[0]):
+                    idx = int(parts[0]) - 1
+                    x = float(parts[1])
+                    y = float(parts[2])
+                    cities[idx, 0] = x
+                    cities[idx, 1] = y
+
+        for salesmen in [2, 3, 5, 7]:
+            instance_name = os.path.splitext(os.path.basename(file_path))[0] + '-m' + str(salesmen)
+            yield (cities, instance_name, salesmen), {}, None
