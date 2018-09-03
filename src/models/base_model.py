@@ -26,8 +26,6 @@ class CustomModel(abc.ABC):
     def __init__(self, **kwargs):
         pretty_print('Model', self.type_name, 'setup:')
         pretty_print('\tUsing GPU:', USE_GPU)
-        if USE_GPU:
-            pretty_print(f'\tCUDA_VISIBLE_DEVICES={os.environ["CUDA_VISIBLE_DEVICES"]}')
 
         for key, value in self.default_kwargs().items():
             if key not in kwargs:

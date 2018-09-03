@@ -123,10 +123,10 @@ def solve_mtsp(cities, groups, meta_heuristic, first_strategy, solution_limit):
 
 def main(*args):
     parser = ArgumentParser()
-    parser.add_argument('mtsplib_dir')
-    parser.add_argument('output_file')
     parser.add_argument('weights')
-    parser.add_argument('meta')
+    parser.add_argument('tsplib_dir')
+    parser.add_argument('output_file')
+    parser.add_argument('meta', choices=META_HEURISTIC.keys())
     parser.add_argument('top', type=int)
     parser.add_argument('beam', type=int)
     parser.add_argument('-o', '--other-args')
@@ -145,7 +145,7 @@ def main(*args):
     results = pd.DataFrame()
 
     name = os.path.basename(args.weights)
-    for cities, instance_name, groups in tqdm(list(MTSPLibDataset(args.mtsplib_dir)),
+    for cities, instance_name, groups in tqdm(list(MTSPLibDataset(args.tsplib_dir)),
                                                 desc=time_str() + ': Solving mTSPLib',
                                                 leave=False,
                                                 unit='instance'):

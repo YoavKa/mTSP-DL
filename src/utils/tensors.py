@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 
 import torch
@@ -8,7 +6,7 @@ from torch.autograd import Variable
 from .common import assert_result
 
 
-USE_GPU = 'CUDA_VISIBLE_DEVICES' in os.environ and os.environ['CUDA_VISIBLE_DEVICES'] != '-1'
+USE_GPU = torch.cuda.is_available()
 
 CPU_TENSORS = {
     'long': torch.LongTensor,
