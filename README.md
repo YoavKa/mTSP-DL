@@ -1,6 +1,6 @@
 # Learning the Multiple Traveling Salesmen Problem with Permutation Invariant Pooling Networks
 
-This repository contains the code implementing the paper "Learning the Multiple Traveling Salesmen Problem with Permutation Invariant Pooling Networks".
+This repository contains the code implementing the paper "[Learning the Multiple Traveling Salesmen Problem with Permutation Invariant Pooling Networks](https://arxiv.org/abs/1803.09621)".
 
 ## Getting Started
 
