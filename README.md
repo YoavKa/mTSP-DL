@@ -1,6 +1,6 @@
-# Modeling Input Invariances and Output Constraints for the Multiple Traveling Salesmen Problem
+# Learning the Multiple Traveling Salesmen Problem with Permutation Invariant Pooling Networks
 
-This repository contains the code implementing the paper "Modeling Input Invariances and Output Constraints for the Multiple Traveling Salesmen Problem".
+This repository contains the code implementing the paper "Learning the Multiple Traveling Salesmen Problem with Permutation Invariant Pooling Networks".
 
 ## Getting Started
 
